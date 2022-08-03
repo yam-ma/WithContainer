@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "ContainerTest"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1sn14rte0mrrw"
+s3_prefix = "ContainerTest"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = ["HelloWorldFunction=434834903063.dkr.ecr.us-east-1.amazonaws.com/helloworld20953121/helloworldfunction19d43fc4repo"]

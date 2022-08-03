@@ -1,0 +1,8 @@
+# 0:23:0:255:253:7:1:191:WNISI:WNI Storm Index:??
+0:23:0:255:34:7:1:208:SSTMI:Snowstorm Index (WNI original):-
+0:23:0:255:253:7:1:208:SSTMI:Snowstorm Index (WNI original):-
+#0:23:0:255:253:7:0:192:MSLTMP:Mean sea level temperature:K
+0:1:0:10:8:0:190:191:MSLTMP:Mean sea level temperature:K
+0:1:0:10:0:0:2:2:Utest:utest:m/s
+0:1:0:10:8:0:190:190:TEST1:Critcal Fire Weather:??
+0:1:0:10:8:0:190:191:TEST2:Dry lightning:??
