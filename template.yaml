@@ -1,34 +1,103 @@
+
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   python3.9
 
-  Sample SAM Template for WithContainer
-
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
     Timeout: 600
 
+Parameters:
+  LambdaFunctionName:
+    Type: String
+    Description: Lambda Function Name
+    Default: WithContainer
+
+  SnsTopicsArn:
+    Description: "set SNS ARN of stock_on_s3."
+    Type: String
+    # Default: arn:aws:sns:ap-northeast-1:928225274854:TagID-447000354
+    Default: arn:aws:sns:ap-northeast-1:928225274854:TagID-400220000
+    # Default: arn:aws:sns:us-east-1:928225274854:TagID-400220000
+
+
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  SQS:
+    Type: AWS::SQS::Queue
     Properties:
+      VisibilityTimeout: 600
+      QueueName: !Sub "${LambdaFunctionName}-sqs"
+  SQSPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Id: AllowSnsTopicToSendMessage
+        Statement:
+          - Sid: 1
+            Effect: Allow
+            Principal: "*"
+            Action:
+               - "sqs:*"
+            Resource: !GetAtt SQS.Arn
+          - Sid: 2
+            Effect: Allow
+            Principal: "*"
+            Action:
+              - sqs:SendMessage
+            Resource: !GetAtt SQS.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn:
+                  !Ref SnsTopicsArn
+      Queues:
+        - !Ref SQS
+  SnsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: sqs
+      Endpoint: !GetAtt SQS.Arn
+      TopicArn: !Ref SnsTopicsArn
+      # Region: us-east-1
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      # added
+      CodeUri: hello_world
+      FunctionName: !Ref LambdaFunctionName
+      # end added
       PackageType: Image
       Architectures:
         - x86_64
       Events:
-        HelloWorld:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+        Event:
+          Type: SQS
           Properties:
-            Path: /hello
-            Method: get
+            Enabled: true
+            Queue: !GetAtt SQS.Arn
+      Environment:
+        Variables:
+          GRIB2TABLE: "my_grib2table"
+      Policies:
+        # - S3ReadPolicy:
+        #     BucketName: !Ref StockS3
+        # - S3CrudPolicy:
+        #     BucketName: !Ref DeliverS3
+        - SQSPollerPolicy:
+            QueueName: !Sub "${LambdaFunctionName}-sqs"        
       Role: !GetAtt LambdaRole.Arn
-      # Role: arn:aws:iam::434834903063:role/TestTestTest
     Metadata:
       Dockerfile: Dockerfile
       DockerContext: ./hello_world
       DockerTag: python3.9-v1
+      
+  LambdaFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${HelloWorldFunction}
+      RetentionInDays: 7
 
   LambdaRole:
     Type: AWS::IAM::Role
@@ -53,12 +122,12 @@ Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldApi:
-    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  # HelloWorldFunction:
-  #  Description: "Hello World Lambda Function ARN"
-  #  Value: !GetAtt HelloWorldFunction.Arn
+  # HelloWorldApi:
+  #   Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+  #   Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn
   # HelloWorldFunctionIamRole:
-  #   Description: "Implicit IAM Role created for Hello World function"
-  #   Value: !GetAtt HelloWorldFunctionRole.Arn
+    # Description: "Implicit IAM Role created for Hello World function"
+    # Value: !GetAtt HelloWorldFunctionRole.Arn

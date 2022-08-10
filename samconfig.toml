@@ -3,9 +3,10 @@ version = 0.1
 [default.deploy]
 [default.deploy.parameters]
 stack_name = "ContainerTest"
-s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1sn14rte0mrrw"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1ghpubw06q501"
 s3_prefix = "ContainerTest"
-region = "us-east-1"
+region = "ap-northeast-1"
+capabilities = "CAPABILITY_NAMED_IAM"
+parameter_overrides = "LambdaFunctionName=\"WithContainer\" SnsTopicsArn=\"arn:aws:sns:ap-northeast-1:928225274854:TagID-400220000\""
+image_repositories = ["HelloWorldFunction=434834903063.dkr.ecr.ap-northeast-1.amazonaws.com/containertestb0d94068/helloworldfunction19d43fc4repo"]
 confirm_changeset = true
-capabilities = "CAPABILITY_IAM"
-image_repositories = ["HelloWorldFunction=434834903063.dkr.ecr.us-east-1.amazonaws.com/helloworld20953121/helloworldfunction19d43fc4repo"]

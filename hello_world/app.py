@@ -1,3 +1,5 @@
+import logging.handlers
+import logging
 import json
 import numpy as np
 import pygrib
@@ -5,6 +7,7 @@ import pywgrib2_s
 import boto3
 import os
 import datetime
+import glob
 
 def lambda_handler(event, context):
     """Sample pure Lambda function
@@ -28,12 +31,61 @@ def lambda_handler(event, context):
         Return doc: https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-lambda-proxy-integrations.html
     """
 
+    #-------------------------
+    # event受け渡しのテスト
+    #-------------------------
+    print("key1", event["key1"])
+    print("key2", event["key2"])
+    print("key3", event["key2"])
+    print("context", context)
+
+    
+    #-------------
+    # logの設定
+    #-------------
+    log = logging.getLogger(__name__)
+    
+    logging.basicConfig(
+        level=logging.INFO,
+        force=True,
+        handlers=None,
+        format='%(asctime)s %(filename)s %(levelname)s %(message)s'
+    )
+
+    
     now = datetime.datetime.utcnow()
     deliver_time = datetime.datetime(now.year, now.month, now.day, 5, 0, 0)
     + datetime.timedelta(hours = 1)                                                                         
     deliver_time = deliver_time.strftime('%Y%m%d%H%M%S')   
+
+    #------------------------
+    # tmp fileを作るテスト
+    #------------------------
+    tagid = event['key1']
+    fname = "/tmp/storm"+deliver_time + "_" + tagid
+    print("fname", fname)
+    event_tagids = []
+
+    with open(fname, "wt") as f:
+        f.write(tagid)
+
+    flist = glob.glob("/tmp/storm*_???")
+    print(flist)
+
+    for fname in flist:
+        
+        with open(fname, "r") as f:
+            event_tagids += f.readlines()
+
+    print("event_tagids", event_tagids)
+
+    command = "ls /tmp/storm*_???"
+    os.system(command)
+
+    if set(event_tagids) == set(['100', '200', '300']):
+        os.system("rm -f /tmp/storm*_???")
     
-    print("Hello world!")
+    log.info("Hello world!")
     
     template = os.path.dirname(__file__) + "/MSM_template.grb"
     output = os.path.dirname(__file__) + "/out_test.grib"
@@ -52,6 +104,10 @@ def lambda_handler(event, context):
     a = pywgrib2_s.write(output, template, 1, new_data = newdata,
                          var = "TMP", ftime = "6 hour fcst", time0 = deliver_time)
     pywgrib2_s.close(output)
+    a = pywgrib2_s.write(output, template, 1, new_data = newdata,
+                         var = "SSTMI", ftime = "12 hour fcst", time0 = deliver_time, Append = True)
+    pywgrib2_s.close(output)
+    log.info(a)
 
     #
     # centerを移動する                                                     
